@@ -1,0 +1,17 @@
+// Zigzag lines for 15M
+upcolor = input(color.lime, 'Bull Color', group="Colors")
+dncolor = input(color.red, 'Bear Color', group="Colors")
+lines = input(0, "Lines Transparency", group="Lines")
+
+// 4時間足の高値・安値を取得
+// [direction2, z3, z4] = ZigZag.zigzag(low, high, 192, 5, 2)
+// if z4.index > 4000
+//     zzzz = line.new(z4.index, z4.price, z4.index+1, z4.price, xloc.bar_index, extend.right, color=color.new(color.red, 0), width=3, style=line.style_dotted) 
+//     if direction2 == direction2[1]
+//         line.delete(zzzz[1])
+半日の高値・安値を取得
+[direction_1d, z5, z6] = ZigZag.zigzag(low, high, 576, 5, 2)
+if z6.index > 2000
+    zz_1d = line.new(z6.index, z6.price, z6.index+1, z6.price, xloc.bar_index, extend.right, color=color.new(color.red, 0), width=3, style=line.style_solid) 
+    if direction_1d == direction_1d[1]
+        line.delete(zz_1d[1])
