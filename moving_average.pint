@@ -1,0 +1,44 @@
+// moving averages
+i_len_1 = input.int(30, title="len1")
+i_len_2 = input.int(50, title="len2")
+i_len_3 = input.int(100, title="len3")
+i_len_4 = input.int(200, title="len4")
+i_len_5 = input.int(300, title="len5")
+
+sma1 = ta.sma(close, i_len_1)
+sma2 = ta.sma(close, i_len_2)
+sma3 = ta.sma(close, i_len_3)
+sma4 = ta.sma(close, i_len_4)
+sma5 = ta.sma(close, i_len_5)
+
+color_trend = sma5*3 > sma5[1] + sma5[2] + sma5[3] ? color.lime : color.red
+
+plot1 = plot(sma1, title="sma1", color=color.new(color_trend, 80))
+plot2 = plot(sma2, title="sma2", color=color.new(color_trend, 70))
+plot3 = plot(sma3, title="sma3", color=color.new(color_trend, 50))
+plot4 = plot(sma4, title="sma4", color=color.new(color_trend, 30))
+plot5 = plot(sma5, title="sma5", color=color.new(color_trend, 20))
+
+fill(plot1, plot5, color=color.new(color_trend, 95))
+fill(plot2, plot5, color=color.new(color_trend, 90))
+fill(plot3, plot5, color=color.new(color_trend, 90))
+fill(plot4, plot5, color=color.new(color_trend, 85))
+
+// labels
+i_label_size = input.string(size.normal, "label size", options=[size.auto, size.tiny, size.small, size.normal, size.large, size.huge])
+label_text_color = color.new(color.white, 20)
+
+var label_A = label.new(x=na, y=na, text="SMA" + str.tostring(i_len_1), color=color.new(color.gray, 95), style=label.style_label_left, textcolor=label_text_color, size=i_label_size)
+label.set_xy(label_A, bar_index, sma1)
+
+var label_B = label.new(x=na, y=na, text="SMA" + str.tostring(i_len_2), color=color.new(color.gray, 95), style=label.style_label_left, textcolor=label_text_color, size=i_label_size)
+label.set_xy(label_B, bar_index, sma2)
+
+var label_C = label.new(x=na, y=na, text="SMA" + str.tostring(i_len_3), color=color.new(color.gray, 95), style=label.style_label_left, textcolor=label_text_color, size=i_label_size)
+label.set_xy(label_C, bar_index, sma3)
+
+var label_D = label.new(x=na, y=na, text="SMA" + str.tostring(i_len_4), color=color.new(color.gray, 95), style=label.style_label_left, textcolor=label_text_color, size=i_label_size)
+label.set_xy(label_D, bar_index, sma4)
+
+var label_E = label.new(x=na, y=na, text="SMA" + str.tostring(i_len_5), color=color.new(color.gray, 95), style=label.style_label_left, textcolor=label_text_color, size=i_label_size)
+label.set_xy(label_E, bar_index, sma5)
