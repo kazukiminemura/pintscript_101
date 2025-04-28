@@ -1,0 +1,153 @@
+// 4時間足のデータを取得
+f_trendlines_4h() =>
+    high_tl = request.security(syminfo.tickerid, "240", high)  // より正確なデータ取得
+    low_tl = request.security(syminfo.tickerid, "240", low)   // 4時間足の安値
+
+    // ZigZagの設定
+    length_tl = input.int(96, title="Length for ZigZag")  // データ期間の入力
+
+    // ZigZagの計算（4時間足のデータを使用）
+    zigzagLow_tl = ta.lowest(low_tl, length_tl)
+    zigzagHigh_tl = ta.highest(high_tl, length_tl)
+
+    // トレンドラインを保存するための配列
+    var line[] uptrendRays = array.new_line(0)  // 上昇トレンドライン
+    var line[] downtrendRays = array.new_line(0)  // 下降トレンドライン
+
+    // 最新の安値と高値の座標を追跡
+    var float lastLow_tl = na
+    var float prevLow_tl = na
+    var int lastLowIndex_tl = na
+    var int prevLowIndex_tl = na
+
+    var float lastHigh_tl = na
+    var float prevHigh_tl = na
+    var int lastHighIndex_tl = na
+    var int prevHighIndex_tl = na
+
+    // 上昇トレンドライン（傾きが上向きの場合のみ描画）
+    if low_tl == zigzagLow_tl
+        prevLow_tl := lastLow_tl
+        prevLowIndex_tl := lastLowIndex_tl
+        lastLow_tl := zigzagLow_tl
+        lastLowIndex_tl := bar_index
+
+        if not na(prevLow_tl) and not na(lastLow_tl)
+            slope = (lastLow_tl - prevLow_tl) / (lastLowIndex_tl - prevLowIndex_tl)  // 傾きの計算
+            if slope > 0  // 傾きが正の場合
+                // 新しいRay（無限延長のライン）を追加
+                newUpRay = line.new(x1=prevLowIndex_tl, y1=prevLow_tl,x2=lastLowIndex_tl, y2=lastLow_tl,extend=extend.right, color=color.green, width=2, style=line.style_solid)
+                array.push(uptrendRays, newUpRay)  // 配列に追加
+
+    // 下降トレンドライン（傾きが下向きの場合のみ描画）
+    if high_tl == zigzagHigh_tl
+        prevHigh_tl := lastHigh_tl
+        prevHighIndex_tl := lastHighIndex_tl
+        lastHigh_tl := zigzagHigh_tl
+        lastHighIndex_tl := bar_index
+
+        if not na(prevHigh_tl) and not na(lastHigh_tl)
+            slope = (prevHigh_tl - lastHigh_tl) / (lastHighIndex_tl - prevHighIndex_tl)  // 傾きの計算
+            if slope > 0  // 傾きが正の場合（下降なので計算式を逆に）
+                // 新しいRay（無限延長のライン）を追加
+                newDownRay = line.new(x1=prevHighIndex_tl, y1=prevHigh_tl,x2=lastHighIndex_tl, y2=lastHigh_tl,extend=extend.right, color=color.red, width=2, style=line.style_solid)
+                array.push(downtrendRays, newDownRay)  // 配列に追加
+
+
+// === 15分足用トレンドライン関数 ===
+f_trendlines_15m() =>
+    // === Inputs ===
+    pivotDepth = input.int(10, title="Pivot Depth (Left Bars)")
+    pivotDeviation = input.int(5, title="Pivot Deviation (Right Bars)")
+    maxLines = input.int(2, title="Max Lines per Direction", minval=1) // ★保持する最大ライン数を設定
+    lineColorUp = input.color(color.green, title="Uptrend Line Color")
+    lineColorDown = input.color(color.red, title="Downtrend Line Color")
+    lineWidth = input.int(1, title="Line Width", minval=1)
+    showPivots = input.bool(false, title="Show Pivot Points for Debug")
+
+    // === Data Fetching ===
+    high_15m = request.security(syminfo.tickerid, "15", high[1], lookahead=barmerge.lookahead_on)
+    low_15m = request.security(syminfo.tickerid, "15", low[1], lookahead=barmerge.lookahead_on)
+
+    // === Pivot Calculation ===
+    float pl = ta.pivotlow(source=low_15m, leftbars=pivotDepth, rightbars=pivotDeviation)
+    float ph = ta.pivothigh(source=high_15m, leftbars=pivotDepth, rightbars=pivotDeviation)
+    // int pivotBarIndex = bar_index - 2 * pivotDeviation
+    // // 15分の区切りを検知
+    // int isNew15Min = ta.change(time("5"))
+    // if (isNew15Min)
+    int pivotBarIndex = bar_index    
+
+    // === Variables for Tracking Pivots and Line Arrays ===
+    // ピボット追跡用変数 (変更なし)
+    var int lastPivotLowBar = na
+    var float lastPivotLowPrice = na
+    var int prevPivotLowBar = na
+    var float prevPivotLowPrice = na
+
+    var int lastPivotHighBar = na
+    var float lastPivotHighPrice = na
+    var int prevPivotHighBar = na
+    var float prevPivotHighPrice = na
+
+    // ★ラインIDを複数保持するための配列
+    var line[] uptrendRays = array.new_line()
+    var line[] downtrendRays = array.new_line()
+
+    // === Logic for Updating Pivots and Drawing/Managing Lines ===
+
+    // --- ピボットローが検出された場合 (上昇トレンドライン候補) ---
+    if not na(pl)
+        // if showPivots
+        //     plotshape(pl, title="Pivot Low", style=shape.triangleup, location=location.absolute, color=color.new(color.navy, 50), size=size.tiny, offset=-pivotDeviation)
+
+        prevPivotLowBar := lastPivotLowBar
+        prevPivotLowPrice := lastPivotLowPrice
+        lastPivotLowBar := pivotBarIndex
+        lastPivotLowPrice := pl
+
+        if not na(prevPivotLowBar) and prevPivotLowBar != lastPivotLowBar
+            float slope_up = (lastPivotLowPrice - prevPivotLowPrice) / (lastPivotLowBar - prevPivotLowBar)
+            if slope_up >= 0 or (lastPivotLowBar - prevPivotLowBar == 0) // 上昇または水平
+
+                // **改善点:** 新しいラインを描画し、配列の末尾に追加
+                newLine = line.new(x1=prevPivotLowBar, y1=prevPivotLowPrice, x2=lastPivotLowBar, y2=lastPivotLowPrice, extend=extend.right, color=lineColorUp, width=lineWidth)
+                array.push(uptrendRays, newLine) // 新しいラインIDを配列の最後に追加
+
+                // plotshape(series=bar_index == lastHighIndex, style=shape.triangledown, location=location.abovebar, color=color.blue, size=size.small)
+                // plotshape(series=bar_index == lastLowIndex, style=shape.triangleup, location=location.belowbar, color=color.blue, size=size.small)
+
+                // **改善点:** 配列サイズが上限を超えたら、先頭（最も古い）のラインを削除
+                while array.size(uptrendRays) > maxLines // while を使うことで、万が一複数超過した場合も対応
+                    lineIdToDelete = array.shift(uptrendRays) // 配列の先頭からIDを取得＆削除
+                    line.delete(lineIdToDelete)             // チャートから対応するラインを削除
+
+    // --- ピボットハイが検出された場合 (下降トレンドライン候補) ---
+    if not na(ph)
+        // if showPivots
+        //     plotshape(ph, title="Pivot High", style=shape.triangledown, location=location.absolute, color=color.new(color.maroon, 50), size=size.tiny, offset=-pivotDeviation)
+
+        prevPivotHighBar := lastPivotHighBar
+        prevPivotHighPrice := lastPivotHighPrice
+        lastPivotHighBar := pivotBarIndex
+        lastPivotHighPrice := ph
+
+        if not na(prevPivotHighBar) and prevPivotHighBar != lastPivotHighBar
+            float slope_down = (lastPivotHighPrice - prevPivotHighPrice) / (lastPivotHighBar - prevPivotHighBar)
+            if slope_down <= 0 or (lastPivotHighBar - prevPivotHighBar == 0) // 下降または水平
+
+                // **改善点:** 新しいラインを描画し、配列の末尾に追加
+                newLine = line.new(x1=prevPivotHighBar, y1=prevPivotHighPrice, x2=lastPivotHighBar, y2=lastPivotHighPrice, extend=extend.right, color=lineColorDown, width=lineWidth)
+                array.push(downtrendRays, newLine) // 新しいラインIDを配列の最後に追加
+
+                // **改善点:** 配列サイズが上限を超えたら、先頭（最も古い）のラインを削除
+                while array.size(downtrendRays) > maxLines // while を使うことで、万が一複数超過した場合も対応
+                    lineIdToDelete = array.shift(downtrendRays) // 配列の先頭からIDを取得＆削除
+                    line.delete(lineIdToDelete)    
+
+
+// === インジケーター実行部分 ===
+// 各バーで関数を呼び出す
+f_trendlines_15m()
+// plot 4h trend lines
+// f_trendlines_4h()
