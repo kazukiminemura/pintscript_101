@@ -1,0 +1,48 @@
+// ★ここで固定する上位時間足を指定
+higher_tf = input.timeframe("15", title="基準時間足")
+
+// 上位足のデータ取得
+pivotHighHTF = request.security(syminfo.tickerid, higher_tf, ta.pivothigh(high, 5, 5))
+pivotLowHTF  = request.security(syminfo.tickerid, higher_tf, ta.pivotlow(low, 5, 5))
+
+pivotHighValHTF = request.security(syminfo.tickerid, higher_tf, high[5])
+pivotLowValHTF  = request.security(syminfo.tickerid, higher_tf, low[5])
+
+// ピボット保存用配列
+var int[] highPivots = array.new_int(0)
+var float[] highValues = array.new_float(0)
+
+var int[] lowPivots = array.new_int(0)
+var float[] lowValues = array.new_float(0)
+
+// ピボット検出・記録
+if not na(pivotHighHTF)
+    array.unshift(highPivots, bar_index)
+    array.unshift(highValues, pivotHighValHTF)
+
+if not na(pivotLowHTF)
+    array.unshift(lowPivots, bar_index)
+    array.unshift(lowValues, pivotLowValHTF)
+
+// 最新2点だけ保持
+if array.size(highPivots) > 2
+    array.pop(highPivots)
+    array.pop(highValues)
+
+if array.size(lowPivots) > 2
+    array.pop(lowPivots)
+    array.pop(lowValues)
+
+// ライン描画
+var line highTrend = na
+var line lowTrend = na
+
+if array.size(highPivots) == 2
+    if not na(highTrend)
+        line.delete(highTrend)
+    highTrend := line.new(x1=array.get(highPivots, 1), y1=array.get(highValues, 1),x2=array.get(highPivots, 0), y2=array.get(highValues, 0),color=color.blue, style=line.style_dotted, width=2, extend=extend.right)
+
+if array.size(lowPivots) == 2
+    if not na(lowTrend)
+        line.delete(lowTrend)
+    lowTrend := line.new(x1=array.get(lowPivots, 1), y1=array.get(lowValues, 1),x2=array.get(lowPivots, 0), y2=array.get(lowValues, 0),color=color.blue, style=line.style_dotted, width=2, extend=extend.right)
