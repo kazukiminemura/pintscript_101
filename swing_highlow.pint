@@ -1,0 +1,70 @@
+// 水平線
+// --- パラメータ ---
+leftBars = input.int(15, title="左期間", minval=1)
+rightBars = input.int(15, title="右期間", minval=1)
+maxLines = input.int(10, title="最大描画ライン数", minval=1)
+lineColorHigh = input.color(color.new(color.blue, 0), title="高値ラインの色")
+lineColorLow = input.color(color.new(color.blue, 0), title="安値ラインの色")
+lineWidth = input.int(2, title="ラインの太さ", minval=1)
+
+// --- 変数定義 (ラインIDと価格レベルを格納する配列) ---
+var line[] highLines = array.new_line()
+var float[] highLevels = array.new_float()
+var line[] lowLines = array.new_line()
+var float[] lowLevels = array.new_float()
+
+// --- ピボットポイントの検出 ---
+pHigh = ta.pivothigh(high, leftBars, rightBars)
+pLow = ta.pivotlow(low, leftBars, rightBars)
+
+// --- 高値ラインの描画と管理 ---
+if not na(pHigh)
+    if array.size(highLines) >= maxLines
+        line.delete(array.shift(highLines))
+        array.shift(highLevels)
+    newLine = line.new(bar_index - rightBars, pHigh, bar_index, pHigh,
+         xloc.bar_index, extend.right, lineColorHigh, line.style_dotted, lineWidth)
+    array.push(highLines, newLine)
+    array.push(highLevels, pHigh)
+
+// --- 安値ラインの描画と管理 ---
+if not na(pLow)
+    if array.size(lowLines) >= maxLines
+        line.delete(array.shift(lowLines))
+        array.shift(lowLevels)
+    newLine = line.new(bar_index - rightBars, pLow, bar_index, pLow,
+         xloc.bar_index, extend.right, lineColorLow, line.style_dotted, lineWidth)
+    array.push(lowLines, newLine)
+    array.push(lowLevels, pLow)
+
+// --- ▼▼▼ ラインブレイクによる削除ロジック (whileループ版) ▼▼▼ ---
+
+// 高値ラインのブレイクチェック
+if array.size(highLines) > 0
+    i_high = array.size(highLines) - 1 // 開始インデックス (配列の最後)
+    while i_high >= 0 // インデックスが0以上である間ループ
+        lineId_high = array.get(highLines, i_high)
+        lineLevel_high = array.get(highLevels, i_high)
+        // 終値がラインレベルを上回ったらブレイク
+        if close > lineLevel_high
+            line.delete(lineId_high)            // ライン削除
+            array.remove(highLines, i_high)     // 配列から削除 (ID)
+            array.remove(highLevels, i_high)    // 配列から削除 (レベル)
+            // 要素を削除したので、次のループでも同じインデックスを再チェックする必要はない
+            // (ループカウンタ i_high はデクリメントされるので問題なし)
+        i_high := i_high - 1 // インデックスをデクリメントして次の要素へ (逆順)
+
+// 安値ラインのブレイクチェック
+if array.size(lowLines) > 0
+    i_low = array.size(lowLines) - 1 // 開始インデックス (配列の最後)
+    while i_low >= 0 // インデックスが0以上である間ループ
+        lineId_low = array.get(lowLines, i_low)
+        lineLevel_low = array.get(lowLevels, i_low)
+        // 終値がラインレベルを下回ったらブレイク
+        if close < lineLevel_low
+            line.delete(lineId_low)             // ライン削除
+            array.remove(lowLines, i_low)       // 配列から削除 (ID)
+            array.remove(lowLevels, i_low)      // 配列から削除 (レベル)
+            // 同上
+        i_low := i_low - 1 // インデックスをデクリメントして次の要素へ (逆順)
+// --- ▲▲▲ ラインブレイクによる削除ロジック (whileループ版) ▲▲▲ ---
