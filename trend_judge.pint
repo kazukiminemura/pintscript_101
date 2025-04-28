@@ -1,0 +1,40 @@
+//
+// トレンドゾーン判定
+//
+pivotHigh = input(192, title="Pivot High")
+pivotLow = input(192, title="Pivot Low")
+threshold = input.float(250.0, title="Trend Threshold (Pips)")
+// 高値と安値の判定
+zigzagHigh = ta.highest(high, pivotHigh)
+zigzagLow = ta.lowest(low, pivotLow)
+isPivotHigh = high == zigzagHigh
+isPivotLow = low == zigzagLow
+// トレンドとレンジの判定
+var float lastHigh = na
+var float lastLow = na
+var int lastHighIndex = na
+var int lastLowIndex = na
+if (isPivotHigh)
+    lastHigh := high
+    lastHighIndex := bar_index
+if (isPivotLow)
+    lastLow := low
+    lastLowIndex := bar_index
+
+// ピップス計算のための価格変動単位
+var pipValue = 1.0
+if (syminfo.ticker == "GOLD")
+    pipValue := 0.25
+else if (syminfo.ticker ==  "USDJPY" or syminfo.ticker ==  "EURJPY" or syminfo.ticker ==  "GBPJPY" or syminfo.ticker ==  "CHFJPY" or syminfo.ticker ==  "AUDJPY" or syminfo.ticker ==  "CADJPY")
+    pipValue := 0.01
+else if (syminfo.ticker == "GBPUSD" or syminfo.ticker == "EURUSD")
+    pipValue := 0.0001
+
+priceDifferencePips = math.abs(lastHigh - lastLow) / pipValue
+isTrending = priceDifferencePips > threshold
+color_trend_bcg = isTrending ? color.aqua : color.gray
+// if (isTrending)
+//     color_trend_bcg = lastHigh > lastLow? color.green : color.red
+bgcolor(color=color.new(color_trend_bcg, 80), title = "Trend")
+plotshape(series=bar_index == lastHighIndex, style=shape.triangledown, location=location.abovebar, color=color.blue, size=size.small)
+plotshape(series=bar_index == lastLowIndex, style=shape.triangleup, location=location.belowbar, color=color.blue, size=size.small)
